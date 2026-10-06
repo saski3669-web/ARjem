@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARجم | فروش جم</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#070707;color:#fff;font-family:Tahoma,Arial,sans-serif}
+header{padding:18px 6%;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #242424;position:sticky;top:0;background:#090909eF;backdrop-filter:blur(8px);z-index:2}
+.logo{font-size:29px;font-weight:900;color:#ff3030}.admin{color:#aaa;text-decoration:none}
+.hero{text-align:center;padding:55px 20px;background:radial-gradient(circle at 50% 0,#3b0c10,#070707 55%)}
+.hero h1{font-size:42px;margin:5px}.hero p{color:#bbb}
+.wrap{max-width:1050px;margin:auto;padding:25px 18px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:17px}
+.card,.panel{background:#111;border:1px solid #292929;border-radius:18px;padding:22px;box-shadow:0 10px 30px #000}
+.card{text-align:center}.price{font-size:23px;color:#ff4141;font-weight:bold;margin:14px 0}
+button{width:100%;border:0;border-radius:11px;padding:13px;background:#e5222c;color:white;font-size:16px;font-weight:bold;cursor:pointer}
+button:hover{background:#ff3a43}label{display:block;margin:13px 0 7px;color:#ccc}input,select{width:100%;padding:13px;border-radius:10px;border:1px solid #333;background:#080808;color:#fff;font-size:15px}
+.panel{margin-top:22px}.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.muted{color:#999;font-size:13px;line-height:1.8}.selected{color:#ff4141;font-weight:bold}
+.hidden{display:none}.ok{padding:14px;border-radius:10px;background:#102b16;color:#9cffae;margin-top:15px}.order{border-top:1px solid #292929;padding:14px 0}.badge{display:inline-block;padding:5px 9px;border-radius:8px;background:#242424;color:#ddd;font-size:12px}
+footer{text-align:center;color:#666;border-top:1px solid #222;padding:25px;margin-top:40px}
+@media(max-width:600px){.row{grid-template-columns:1fr}.hero h1{font-size:34px}}
+</style>
+</head>
+<body>
+<header><div class="logo">ARجم</div><a class="admin" href="#admin">پنل مدیریت</a></header>
+<section class="hero"><h1>ARجم</h1><p>فروش جم فری فایر — سریع و ساده</p></section>
+
+<main class="wrap">
+<h2>انتخاب بسته</h2>
+<div class="grid" id="packs"></div>
+
+<section class="panel" id="order">
+<h2>ثبت سفارش</h2>
+<p>بسته انتخابی: <span class="selected" id="chosen">انتخاب نشده</span></p>
+<div class="row">
+<div><label>UID بازی</label><input id="uid" inputmode="numeric" placeholder="UID را وارد کنید"></div>
+<div><label>شماره تماس</label><input id="phone" inputmode="tel" placeholder="شماره تماس"></div>
+</div>
+<label>روش پرداخت</label>
+<select id="payment"><option>درگاه پرداخت</option><option>پرداخت کارت‌به‌کارت (نیازمند تأیید دستی)</option></select>
+<button style="margin-top:18px" onclick="submitOrder()">ثبت سفارش و ادامه پرداخت</button>
+<div class="muted">توجه: این نسخه درگاه واقعی ندارد. برای پرداخت واقعی باید API درگاه معتبر و قانونی متصل شود.</div>
+<div id="msg"></div>
+</section>
+
+<section class="panel" id="admin">
+<h2>پنل مدیریت</h2>
+<p class="muted">این پنل برای نسخه آزمایشی همین مرورگر است. اطلاعات در سرور ذخیره نمی‌شود.</p>
+<div id="orders"></div>
+</section>
+</main>
+<footer>© 2026 ARجم</footer>
+
+<script>
+const packs=[
+['100 جم','50,000 تومان'],['310 جم','120,000 تومان'],
+['520 جم','190,000 تومان'],['1060 جم','360,000 تومان'],
+['2180 جم','690,000 تومان'],['5600 جم','1,650,000 تومان']
+];
+let selected=null;
+const packsEl=document.getElementById('packs');
+packs.forEach((p,i)=>packsEl.innerHTML+=`<div class="card"><h3>${p[0]}</h3><div class="price">${p[1]}</div><button onclick="choose(${i})">انتخاب بسته</button></div>`);
+
+function choose(i){selected=packs[i];document.getElementById('chosen').textContent=selected[0]+' — '+selected[1];location.hash='order';}
+function submitOrder(){
+ const uid=document.getElementById('uid').value.trim(),phone=document.getElementById('phone').value.trim();
+ if(!selected)return alert('اول یک بسته انتخاب کن.');
+ if(!uid)return alert('UID را وارد کن.');
+ if(!phone)return alert('شماره تماس را وارد کن.');
+ const order={id:'AR'+Date.now().toString().slice(-7),pack:selected[0],price:selected[1],uid,phone,status:'در انتظار پرداخت'};
+ const orders=JSON.parse(localStorage.getItem('arjam_orders')||'[]');orders.unshift(order);
+ localStorage.setItem('arjam_orders',JSON.stringify(orders));
+ document.getElementById('msg').innerHTML='<div class="ok">سفارش '+order.id+' ساخته شد. اکنون باید به درگاه واقعی متصل شود.</div>';
+ renderOrders();
+}
+function renderOrders(){
+ const orders=JSON.parse(localStorage.getItem('arjam_orders')||'[]'),el=document.getElementById('orders');
+ el.innerHTML=orders.length?'':'<p class="muted">هنوز سفارشی ثبت نشده.</p>';
+ orders.forEach((o,i)=>el.innerHTML+=`<div class="order"><b>${o.id}</b> — ${o.pack} — ${o.price}<br>UID: ${o.uid} | تماس: ${o.phone}<br><span class="badge">${o.status}</span>
+ <button style="width:auto;margin:8px 0 0 5px;padding:8px 12px" onclick="setStatus(${i},'پرداخت تأیید شد')">تأیید پرداخت</button>
+ <button style="width:auto;margin-top:8px;padding:8px 12px;background:#333" onclick="setStatus(${i},'لغو شد')">لغو</button></div>`);
+}
+function setStatus(i,status){const o=JSON.parse(localStorage.getItem('arjam_orders')||'[]');o[i].status=status;localStorage.setItem('arjam_orders',JSON.stringify(o));renderOrders();}
+renderOrders();
+</script>
+</body></html>
